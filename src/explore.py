@@ -1,5 +1,6 @@
 import os
 
+import attr
 import requests
 import pandas as pd
 
@@ -10,10 +11,14 @@ from src.config import CONFIG
 client_id = CONFIG['CLIENT_ID']
 access_token = CONFIG['ACCESS_TOKEN']
 
+
+
 class StravaClientHandler:
 
     def __init__(self):
         self.get_auth_scope()
+        requests.get(
+            f'https://www.strava.com/oauth/authorize?client_id={CONFIG["CLIENT_ID"]}&redirect_uri={CONFIG["CALLBACK"]}&response_type=code&scope=read')
         self.strava_client = self.connect_to_strava()
 
     def reset_client(self, access_token: str = None) -> Client:

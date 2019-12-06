@@ -13,9 +13,12 @@ def test_er():
 def test1():
 
     response = requests.get(f'https://www.strava.com/oauth/authorize?client_id={CONFIG["CLIENT_ID"]}&redirect_uri={CONFIG["CALLBACK"]}&response_type=code&scope=read')
-    assert response
+
 
 def test_get_athletes():
 
     client = StravaClientHandler()
-    client.get_athlete(CONFIG['ATHLETE_ID'])
+    response = client.get_athlete(CONFIG['ATHLETE_ID'])
+    if response.status_code == 200:
+        data = response.json()
+        pass
