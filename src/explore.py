@@ -7,10 +7,14 @@ from stravalib import Client
 
 from src.config import CONFIG
 
+client_id = CONFIG['CLIENT_ID']
+access_token = CONFIG['ACCESS_TOKEN']
+
 class StravaClientHandler:
 
     def __init__(self):
-        self.connect_to_strava()
+        self.get_auth_scope()
+        self.strava_client = self.connect_to_strava()
 
     def reset_client(self, access_token: str = None) -> Client:
         if not access_token:
@@ -18,7 +22,7 @@ class StravaClientHandler:
         return Client(access_token=access_token)
 
     def connect_to_strava(self):
-        strava_client = Client()
+        strava_client = Client(access_token=CONFIG['ACCESS_TOKEN'])
 
         if os.getenv('DEPLOYMENT_STAGE', 'dev'):
             redirect_url = 'http://127.0.0.1:5000/authorization'
@@ -26,12 +30,19 @@ class StravaClientHandler:
             redirect_url = CONFIG['WEBSITE']
 
         strava_client.authorization_url(client_id=CONFIG['CLIENT_ID'],
-                                              redirect_uri=redirect_url)
-    def get_athlete(self):
-        client = self.reset_client()
-        return client.get_athlete()
+                                        redirect_uri=redirect_url)
+        return strava_client
 
+    def get_athlete(self, athlete_id: int=''):
+        return requests.get(f'https://www.strava.com/api/v3/athletes/{athlete_id}?access_token={access_token}', headers={"accept": "application/json"})
 
+    def get_athlete_request(self):
+
+        return requests.get(f'https://www.strava.com/api/v3/activities?scope=activity:read', headers={'Authorization': f"Bearer {access_token}"})
+
+    def get_auth_scope(self):
+        requests.get(
+            f'https://www.strava.com/oauth/authorize?client_id={CONFIG["CLIENT_ID"]}&redirect_uri={CONFIG["CALLBACK"]}&response_type=code&scope=read')
 
 class NoMoreAttributes(Exception):
 
@@ -39,10 +50,6 @@ class NoMoreAttributes(Exception):
         super().__init__(*args, **kwargs)
         self.error_msg = error_msg
 
-def get_access():
-    url = 'https://www.strava.com.oath/authorize'
-    client_id = CONFIG['CLIENT_ID']
-    client_secret = CONFIG['CLIENT_SECRET']
 
 def authorizer():
     url = "https://strava.com/oauth/authorize"
@@ -51,8 +58,10 @@ def get_access():
     url = 'https://www.strava.com.oath/authorize'
     client_id = CONFIG['CLIENT_ID']
     client_secret = CONFIG['CLIENT_SECRET']
-    final_url =f'{url}?client_id={client_id}?client_secret={client_secret}&code=acitivity:read&grant_type=authorization_code&scope=activity:read'
-    return requests.get(final_url, headers={'Authorization': f'Bearer ${ACCESS_TOKEN}'})
+    access_token = CONFIG['ACCESS_TOKEN']
+    website = CONFIG['WEBSITE']
+    final_url =f'{url}?client_id={client_id}?client_secret={client_secret}&code=acitivity:read&grant_type=authorization_code&scope=activity:read&redirect_uri={website}'
+    return requests.get(final_url, headers={'Authorization': f'Bearer ${access_token}'})
 
 def get_local_access():
     url = 'https://www.strava.com.oath/authorize'
@@ -73,9 +82,12 @@ def get_activities() -> pd.DataFrame:
     return activities
 
 def retrieve_paginated_activies(activities: pd.DataFrame, page: int) -> pd.DataFrame:
-    url = f'{ACTIVITIES_URL}?access_token={ACCESS_TOKEN}&per_page=50&page={str(page)}'
+    acitivities_url = CONFIG['ACTIVITIES_URL']
+    access_token = CONFIG['ACCESS_TOKEN']
+    url = f'{acitivities_url}?access_token={access_token}&per_page=50&page={str(page)}'
     response = requests.get(url)
     data = response.json()
+    print(data)
     if not data:
         raise NoMoreAttributes('No more attributes found for this request')
 
@@ -86,4 +98,5 @@ def retrieve_paginated_activies(activities: pd.DataFrame, page: int) -> pd.DataF
     return activities
 
 if __name__ == '__main__':
-    print(get_access())
+    #print(get_access())
+    print(get_activities())
